@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULTRA RNG: TITAN EDITION v5.0</title>
+    <!-- 
+        BRAINROT ULTRA RNG - SOURCE CODE
+        VERSION: 5.0.2 (STABLE)
+        FEATURES: 
+        - 12 Rarity Tiers
+        - 150+ Unique Items
+        - Admin Command Center
+        - Upgrade Shop
+        - Data Persistence
+        - Particle Engine
+    -->
+    <style>
+        :root {
+            --bg-dark: #0a0a0c;
+            --panel-bg: #16161e;
+            --accent: #7aa2f7;
+            --text-main: #c0caf5;
+            --text-dim: #565f89;
+            
+            /* Rarity Colors */
+            --common: #949cbb;
+            --uncommon: #9ece6a;
+            --rare: #7dcfff;
+            --epic: #bb9af7;
+            --legendary: #e0af68;
+            --mythic: #f7768e;
+            --divine: #ff9e64;
+            --celestial: #00ffcc;
+            --void: #24283b;
+            --singular: #ff00ff;
+            --godly: #ff0000;
+            --error: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* [ 1. HEADER SECTION ] */
+        header {
+            background: var(--panel-bg);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #222;
+            z-index: 100;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 25px;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        /* [ 2. NAVIGATION ] */
+        nav {
+            background: #111;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 1px solid #333;
+            color: var(--text-dim);
+            padding: 8px 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .nav-btn.active {
+            background: var(--accent);
+            color: var(--bg-dark);
+            border-color: var(--accent);
+        }
+
+        /* [ 3. MAIN CONTENT AREAS ] */
+        main {
+            flex: 1;
+            position: relative;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .view-panel {
+            display: none;
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .view-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* [ 4. ROLL VIEW ] */
+        #roll-view {
+            text-align: center;
+            padding-top: 50px;
+        }
+
+        .roll-display {
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .item-card-large {
+            width: 320px;
+            background: var(--panel-bg);
+            border: 4px solid var(--common);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .item-card-large.glitch {
+            animation: glitch 0.1s infinite;
+        }
+
+        .rarity-tag {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .item-name {
+            font-size: 28px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        .item-chance {
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+
+        .roll-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .main-roll-btn {
+            background: linear-gradient(135deg, #7aa2f7, #bb9af7);
+            border: none;
+            padding: 20px 80px;
+            font-size: 24px;
+            font-weight: 900;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 0 #414868;
+            transition: 0.1s;
+        }
+
+        .main-roll-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px 0 #414868;
+        }
+
+        .auto-roll-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #1a1b26;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+
+        /* [ 5. INVENTORY VIEW ] */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            padding-bottom: 100px;
+        }
+
+        .inv-card {
+            background: var(--panel-bg);
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 5px solid var(--common);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .inv-card .count {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* [ 6. SHOP VIEW ] */
+        .shop-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .shop-item {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #333;
+        }
+
+        .shop-info h3 { color: var(--accent); margin-bottom: 5px; }
+        .shop-info p { font-size: 13px; color: var(--text-dim); }
+
+        .buy-btn {
+            background: #2ac3de;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .buy-btn:disabled { background: #333; cursor: not-allowed; }
+
+        /* [ 7. ADMIN PANEL ] */
+        #admin-lock {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 60vh;
+        }
+
+        .admin-input {
+            background: #111;
+            border: 2px solid #333;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            width: 300px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .admin-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .admin-btn {
+            background: #f7768e;
+            border: none;
+            padding: 15px;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* [ 8. ANIMATIONS & EFFECTS ] */
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-5px, 5px); }
+            40% { transform: translate(-5px, -5px); }
+            60% { transform: translate(5px, 5px); }
+            80% { transform: translate(5px, -5px); }
+            100% { transform: translate(0); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--accent);
+            color: var(--bg-dark);
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <h1 style="font-size: 22px; letter-spacing: 2px;">ULTRA <span style="color: var(--accent);">RNG</span></h1>
+        </div>
+        <div class="stats-container">
+            <div class="stat-box">
+                <span class="stat-label">Balance</span>
+                <span class="stat-value" id="stat-money">$0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Total Rolls</span>
+                <span class="stat-value" id="stat-rolls">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Luck Mult</span>
+                <span class="stat-value" id="stat-luck">x1.0</span>
+            </div>
+        </div>
+    </header>
+
+    <nav>
+        <button class="nav-btn active" onclick="switchTab('roll')">ROLL</button>
+        <button class="nav-btn" onclick="switchTab('inventory')">INVENTORY</button>
+        <button class="nav-btn" onclick="switchTab('shop')">UPGRADES</button>
+        <button class="nav-btn" onclick="switchTab('collection')">COLLECTION</button>
+        <button class="nav-btn" onclick="switchTab('admin')" style="border-color: #f7768e; color: #f7768e;">ADMIN</button>
+    </nav>
+
+    <main id="app-container">
+        
+        <!-- ROLL VIEW -->
+        <div id="roll-view" class="view-panel active">
+            <div class="roll-display">
+                <div id="item-card" class="item-card-large">
+                    <span id="res-rarity-tag" class="rarity-tag" style="background: var(--common);">Common</span>
+                    <h2 id="res-name" class="item-name">Ready?</h2>
+                    <p id="res-chance" class="item-chance">1 in 1</p>
+                </div>
+            </div>
+            <div class="roll-actions">
+                <button id="roll-btn" class="main-roll-btn" onclick="game.roll()">ROLL</button>
+                <label class="auto-roll-toggle">
+                    <input type="checkbox" id="auto-roll-checkbox">
+                    <span>AUTO-ROLL</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- INVENTORY VIEW -->
+        <div id="inventory-view" class="view-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-size: 32px;">Your Stash</h2>
+                <button class="nav-btn" onclick="game.sellAll()">SELL ALL BUT TOP 5</button>
+            </div>
+            <div id="inventory-grid" class="inventory-grid">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+
+        <!-- SHOP VIEW -->
+        <div id="shop-view" class="view-panel">
+            <h2 style="font-size: 32px; margin-bottom: 30px;">Luck & Economy Upgrades</h2>
+            <div class="shop-container">
+                <div class="shop-item">
+                    <div class="shop-info">
+                        <h3>Luck Training</h3>
+                        <p>Permanently increases luck by +0.5</p>
+                        <p id="luck-cost" style="color: var(--legendary); font-weight: bold; margin-top: 5px;">Cost: $500</p>
+                    </div>
+                    <button class="buy-btn" onclick="game.buyUpgrade('luck')">UPGRADE</button>
+                </div>
+                <div class="shop-item">
+                    <div class="shop-info">
+                        <h3>Industrial Press</h3>
+                        <p>Increases item sell value by 20%</p>
+                        <p id="sell-cost" style="color: var(--legendary); font-weight: bold; margin-top: 5px;">Cost: $1,000</p>
+                    </div>
+                    <button class="buy-btn" onclick="game.buyUpgrade('sell')">UPGRADE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLLECTION VIEW -->
+        <div id="collection-view" class="view-panel">
+            <h2 style="font-size: 32px; margin-bottom: 20px;">Collection Log</h2>
+            <div id="collection-grid" class="inventory-grid">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+
+        <!-- ADMIN VIEW -->
+        <div id="admin-view" class="view-panel">
+            <div id="admin-lock">
+                <h3>System Access Required</h3>
+                <p style="color: var(--text-dim); margin-bottom: 20px;">Enter Administrative Override Code</p>
+                <input type="password" id="admin-pass" class="admin-input" placeholder="••••••••">
+                <button class="main-roll-btn" style="padding: 10px 40px; font-size: 16px;" onclick="game.unlockAdmin()">VERIFY</button>
+            </div>
+            <div id="admin-interface" style="display: none;">
+                <h2 style="color: #f7768e; margin-bottom: 20px;">ADMIN COMMAND CENTER</h2>
+                <div class="admin-controls">
+                    <button class="admin-btn" onclick="game.adminAction('add_money')">ADD $1,000,000</button>
+                    <button class="admin-btn" onclick="game.adminAction('add_luck')">SET LUCK x100</button>
+                    <button class="admin-btn" onclick="game.adminAction('give_godly')">GIVE RANDOM GODLY</button>
+                    <button class="admin-btn" onclick="game.adminAction('reset_data')" style="background: #333;">NUKE ALL DATA</button>
+                    <button class="admin-btn" onclick="game.adminAction('toggle_glitch')">TOGGLE GLITCH MODE</button>
+                    <button class="admin-btn" onclick="game.adminAction('unlock_all')">COMPLETE COLLECTION</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="toast" class="toast">Rarity Discovered!</div>
+
+    <script>
+        /**
+         * ULTRA RNG ENGINE v5.0
+         * Core Logic and Data
+         */
+
+        // 1. DATA DEFINITIONS (150+ Items across 12 rarities)
+        const RARITY_DATA = {
+            COMMON:     { label: 'Common',      color: '#949cbb', weight: 1000000, baseValue: 1 },
+            UNCOMMON:   { label: 'Uncommon',    color: '#9ece6a', weight: 500000,  baseValue: 5 },
+            RARE:       { label: 'Rare',        color: '#7dcfff', weight: 100000,  baseValue: 25 },
+            EPIC:       { label: 'Epic',        color: '#bb9af7', weight: 20000,   baseValue: 100 },
+            LEGENDARY:  { label: 'Legendary',   color: '#e0af68', weight: 5000,    baseValue: 500 },
+            MYTHIC:     { label: 'Mythic',      color: '#f7768e', weight: 1000,    baseValue: 2500 },
+            DIVINE:     { label: 'Divine',      color: '#ff9e64', weight: 200,     baseValue: 10000 },
+            CELESTIAL:  { label: 'Celestial',   color: '#00ffcc', weight: 50,      baseValue: 50000 },
+            VOID:       { label: 'Void',        color: '#24283b', weight: 10,      baseValue: 250000 },
+            SINGULAR:   { label: 'Singular',    color: '#ff00ff', weight: 2,       baseValue: 1000000 },
+            GODLY:      { label: 'Godly',       color: '#ff0000', weight: 0.5,     baseValue: 5000000 },
+            ERROR:      { label: 'Error',       color: '#ffffff', weight: 0.1,     baseValue: 99999999 }
+        };
+
+        const ITEM_DATABASE = [
+            // Common
+            { name: "Dust Bunny", rarity: "COMMON" },
+            { name: "Rusty Nail", rarity: "COMMON" },
+            { name: "Old Sock", rarity: "COMMON" },
+            { name: "Bent Paperclip", rarity: "COMMON" },
+            { name: "Used Napkin", rarity: "COMMON" },
+            { name: "Single Grain of Rice", rarity: "COMMON" },
+            { name: "Broken Pencil", rarity: "COMMON" },
+            { name: "Dry Leaf", rarity: "COMMON" },
+            { name: "Pebble", rarity: "COMMON" },
+            { name: "Plastic Cap", rarity: "COMMON" },
+            
+            // Uncommon
+            { name: "Copper Coin", rarity: "UNCOMMON" },
+            { name: "Iron Ring", rarity: "UNCOMMON" },
+            { name: "Leather Scrap", rarity: "UNCOMMON" },
+            { name: "Wooden Button", rarity: "UNCOMMON" },
+            { name: "Glass Shard", rarity: "UNCOMMON" },
+            { name: "Polished Stone", rarity: "UNCOMMON" },
+            { name: "Steel Key", rarity: "UNCOMMON" },
+            { name: "Wool Scarf", rarity: "UNCOMMON" },
+            { name: "Chipped Marble", rarity: "UNCOMMON" },
+            { name: "Old Map", rarity: "UNCOMMON" },
+
+            // Rare
+            { name: "Silver Nugget", rarity: "RARE" },
+            { name: "Glowing Mushroom", rarity: "RARE" },
+            { name: "Frozen Flame", rarity: "RARE" },
+            { name: "Echoing Conch", rarity: "RARE" },
+            { name: "Magnetic Compass", rarity: "RARE" },
+            { name: "Sapphire Eye", rarity: "RARE" },
+            { name: "Obsidian Blade", rarity: "RARE" },
+            { name: "Lightning Jar", rarity: "RARE" },
+            { name: "Ancient Script", rarity: "RARE" },
+            { name: "Star Silk", rarity: "RARE" },
+
+            // Epic
+            { name: "Gold Ingot", rarity: "EPIC" },
+            { name: "Phoenix Feather", rarity: "EPIC" },
+            { name: "Dragon Scale", rarity: "EPIC" },
+            { name: "Meteorite Core", rarity: "EPIC" },
+            { name: "Vampire's Fang", rarity: "EPIC" },
+            { name: "Shadow Cloak", rarity: "EPIC" },
+            { name: "Manticore Tail", rarity: "EPIC" },
+            { name: "Crystalized Time", rarity: "EPIC" },
+            { name: "Liquid Moonlight", rarity: "EPIC" },
+            { name: "Titan's Thumb", rarity: "EPIC" },
+
+            // Legendary
+            { name: "Holy Grail", rarity: "LEGENDARY" },
+            { name: "Excalibur's Scabbard", rarity: "LEGENDARY" },
+            { name: "Philosopher's Stone", rarity: "LEGENDARY" },
+            { name: "Midas's Left Ear", rarity: "LEGENDARY" },
+            { name: "Aegis Shield", rarity: "LEGENDARY" },
+            { name: "World-Tree Branch", rarity: "LEGENDARY" },
+            { name: "Ambrosia Vial", rarity: "LEGENDARY" },
+            { name: "Pandora's Latch", rarity: "LEGENDARY" },
+            { name: "Icarus's Wax", rarity: "LEGENDARY" },
+
+            // Mythic
+            { name: "Eye of Sauron", rarity: "MYTHIC" },
+            { name: "Cthulhu's Tentacle", rarity: "MYTHIC" },
+            { name: "Grim Reaper's Scythe", rarity: "MYTHIC" },
+            { name: "Black Hole Seed", rarity: "MYTHIC" },
+            { name: "God-Slayer Arrow", rarity: "MYTHIC" },
+            { name: "Ragnarok Horn", rarity: "MYTHIC" },
+
+            // Divine
+            { name: "Zeus's Bolt", rarity: "DIVINE" },
+            { name: "Poseidon's Trident", rarity: "DIVINE" },
+            { name: "Hades's Helmet", rarity: "DIVINE" },
+            { name: "Amaterasu's Mirror", rarity: "DIVINE" },
+            { name: "Odin's Spear", rarity: "DIVINE" },
+
+            // Celestial
+            { name: "Andromeda Nebula", rarity: "CELESTIAL" },
+            { name: "Supernova Remnant", rarity: "CELESTIAL" },
+            { name: "Pulsar Heart", rarity: "CELESTIAL" },
+            { name: "Event Horizon", rarity: "CELESTIAL" },
+
+            // Void
+            { name: "The Silence", rarity: "VOID" },
+            { name: "Absolute Zero", rarity: "VOID" },
+            { name: "Non-Existence", rarity: "VOID" },
+
+            // Singular
+            { name: "The Big Bang", rarity: "SINGULAR" },
+            { name: "Omega Point", rarity: "SINGULAR" },
+
+            // Godly
+            { name: "The Developer's Keyboard", rarity: "GODLY" },
+            { name: "Source Code", rarity: "GODLY" },
+
+            // Error
+            { name: "NaN", rarity: "ERROR" },
+            { name: "404: Reality Not Found", rarity: "ERROR" }
+        ];
+
+        // Fill up to 150 items programmatically for variety
+        for(let i=0; i<80; i++) {
+            ITEM_DATABASE.push({
+                name: `Mystery Artifact #${i+100}`,
+                rarity: i < 40 ? "COMMON" : (i < 60 ? "UNCOMMON" : "RARE")
+            });
+        }
+
+        /**
+         * GAME CLASS
+         */
+        class RngGame {
+            constructor() {
+                this.state = {
+                    money: 0,
+                    totalRolls: 0,
+                    luckMultiplier: 1,
+                    sellMultiplier: 1,
+                    inventory: {},
+                    collection: new Set(),
+                    upgrades: {
+                        luck: 0,
+                        sell: 0
+                    },
+                    isAdmin: false,
+                    isGlitchMode: false
+                };
+
+                this.autoRollInterval = null;
+                this.load();
+                this.updateUI();
+                this.initListeners();
+            }
+
+            save() {
+                const saveData = {
+                    ...this.state,
+                    collection: Array.from(this.state.collection)
+                };
+                localStorage.setItem('ULTRA_RNG_SAVE', JSON.stringify(saveData));
+            }
+
+            load() {
+                const saved = localStorage.getItem('ULTRA_RNG_SAVE');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    this.state = { ...this.state, ...parsed };
+                    this.state.collection = new Set(parsed.collection || []);
+                }
+            }
+
+            initListeners() {
+                document.getElementById('auto-roll-checkbox').addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        this.autoRollInterval = setInterval(() => this.roll(), 150);
+                    } else {
+                        clearInterval(this.autoRollInterval);
+                    }
+                });
+            }
+
+            showToast(msg, color) {
+                const t = document.getElementById('toast');
+                t.innerText = msg;
+                t.style.background = color || 'var(--accent)';
+                t.style.display = 'block';
+                setTimeout(() => t.style.display = 'none', 3000);
+            }
+
+            roll() {
+                this.state.totalRolls++;
+                
+                // 1. Calculate luck-adjusted weights
+                let totalWeight = 0;
+                const weights = [];
+
+                for (const [key, data] of Object.entries(RARITY_DATA)) {
+                    let w = data.weight;
+                    if (key !== 'COMMON') {
+                        w = w * this.state.luckMultiplier;
+                    }
+                    totalWeight += w;
+                    weights.push({ key, threshold: totalWeight });
+                }
+
+                // 2. Pick rarity
+                const random = Math.random() * totalWeight;
+                let selectedRarity = 'COMMON';
+                for (const w of weights) {
+                    if (random <= w.threshold) {
+                        selectedRarity = w.key;
+                        break;
+                    }
+                }
+
+                // 3. Pick item from rarity pool
+                const pool = ITEM_DATABASE.filter(i => i.rarity === selectedRarity);
+                const item = pool[Math.floor(Math.random() * pool.length)];
+
+                // 4. Update state
+                const rarityInfo = RARITY_DATA[selectedRarity];
+                this.state.money += rarityInfo.baseValue * this.state.sellMultiplier;
+                
+                if (!this.state.inventory[item.name]) {
+                    this.state.inventory[item.name] = { ...item, count: 0 };
+                }
+                this.state.inventory[item.name].count++;
+
+                if (!this.state.collection.has(item.name)) {
+                    this.state.collection.add(item.name);
+                    if (rarityInfo.weight < 5000) {
+                        this.showToast(`NEW DISCOVERY: ${item.name}!`, rarityInfo.color);
+                    }
+                }
+
+                // 5. Visuals
+                this.displayRoll(item, rarityInfo, totalWeight);
+                this.updateUI();
+                
+                if (this.state.totalRolls % 10 === 0) this.save();
+            }
+
+            displayRoll(item, rarity, totalWeight) {
+                const card = document.getElementById('item-card');
+                const nameEl = document.getElementById('res-name');
+                const rarityEl = document.getElementById('res-rarity-tag');
+                const chanceEl = document.getElementById('res-chance');
+
+                nameEl.innerText = item.name;
+                nameEl.style.color = rarity.color;
+                rarityEl.innerText = rarity.label;
+                rarityEl.style.background = rarity.color;
+                
+                const chance = (rarity.weight / totalWeight) * 100;
+                chanceEl.innerText = chance < 0.001 ? `1 in ${(100/chance).toLocaleString()}` : `${chance.toFixed(4)}% chance`;
+
+                card.style.borderColor = rarity.color;
+                card.style.boxShadow = `0 0 30px ${rarity.color}44`;
+
+                if (rarity.weight <= 10) {
+                    card.classList.add('glitch');
+                    setTimeout(() => card.classList.remove('glitch'), 500);
+                }
+            }
+
+            updateUI() {
+                document.getElementById('stat-money').innerText = `$${Math.floor(this.state.money).toLocaleString()}`;
+                document.getElementById('stat-rolls').innerText = this.state.totalRolls.toLocaleString();
+                document.getElementById('stat-luck').innerText = `x${this.state.luckMultiplier.toFixed(1)}`;
+
+                // Update Shop Costs
+                document.getElementById('luck-cost').innerText = `Cost: $${(500 * Math.pow(1.5, this.state.upgrades.luck)).toLocaleString()}`;
+                document.getElementById('sell-cost').innerText = `Cost: $${(1000 * Math.pow(1.8, this.state.upgrades.sell)).toLocaleString()}`;
+
+                // Render Inventory if active
+                if (document.getElementById('inventory-view').classList.contains('active')) {
+                    this.renderInventory();
+                }
+                
+                // Render Collection if active
+                if (document.getElementById('collection-view').classList.contains('active')) {
+                    this.renderCollection();
+                }
+            }
+
+            renderInventory() {
+                const grid = document.getElementById('inventory-grid');
+                grid.innerHTML = '';
+                
+                const sorted = Object.values(this.state.inventory).sort((a,b) => {
+                    return RARITY_DATA[b.rarity].baseValue - RARITY_DATA[a.rarity].baseValue;
+                });
+
+                sorted.forEach(item => {
+                    if (item.count <= 0) return;
+                    const card = document.createElement('div');
+                    card.className = 'inv-card';
+                    card.style.borderLeftColor = RARITY_DATA[item.rarity].color;
+                    card.innerHTML = `
+                        <span class="count">${item.count}</span>
+                        <div style="font-size: 10px; color: ${RARITY_DATA[item.rarity].color}">${item.rarity}</div>
+                        <div style="font-weight: bold; font-size: 14px;">${item.name}</div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+
+            renderCollection() {
+                const grid = document.getElementById('collection-grid');
+                grid.innerHTML = '';
+
+                ITEM_DATABASE.forEach(item => {
+                    const discovered = this.state.collection.has(item.name);
+                    const card = document.createElement('div');
+                    card.className = 'inv-card';
+                    card.style.opacity = discovered ? '1' : '0.2';
+                    card.style.borderLeftColor = discovered ? RARITY_DATA[item.rarity].color : '#333';
+                    
+                    card.innerHTML = `
+                        <div style="font-size: 10px;">${discovered ? item.rarity : '???' }</div>
+                        <div style="font-weight: bold; font-size: 14px;">${discovered ? item.name : 'Unknown Artifact'}</div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+
+            buyUpgrade(type) {
+                if (type === 'luck') {
+                    const cost = 500 * Math.pow(1.5, this.state.upgrades.luck);
+                    if (this.state.money >= cost) {
+                        this.state.money -= cost;
+                        this.state.luckMultiplier += 0.5;
+                        this.state.upgrades.luck++;
+                        this.showToast("LUCK UPGRADED!");
+                    }
+                } else if (type === 'sell') {
+                    const cost = 1000 * Math.pow(1.8, this.state.upgrades.sell);
+                    if (this.state.money >= cost) {
+                        this.state.money -= cost;
+                        this.state.sellMultiplier += 0.2;
+                        this.state.upgrades.sell++;
+                        this.showToast("EFFICIENCY UPGRADED!");
+                    }
+                }
+                this.updateUI();
+                this.save();
+            }
+
+            sellAll() {
+                // Logic to keep top 5 rarest types and sell everything else for 50% value
+                const items = Object.values(this.state.inventory).sort((a,b) => {
+                    return RARITY_DATA[b.rarity].baseValue - RARITY_DATA[a.rarity].baseValue;
+                });
+
+                items.slice(5).forEach(item => {
+                    const value = (RARITY_DATA[item.rarity].baseValue * item.count) * 0.5;
+                    this.state.money += value;
+                    item.count = 0;
+                });
+
+                this.showToast("INVENTORY PURGED & SOLD");
+                this.renderInventory();
+                this.updateUI();
+                this.save();
+            }
+
+            /**
+             * ADMIN MODULE
+             */
+            unlockAdmin() {
+                const pass = document.getElementById('admin-pass').value;
+                if (pass === 'rnggod69') {
+                    document.getElementById('admin-lock').style.display = 'none';
+                    document.getElementById('admin-interface').style.display = 'block';
+                    this.state.isAdmin = true;
+                    this.showToast("ADMIN ACCESS GRANTED", "#f7768e");
+                } else {
+                    alert("ACCESS DENIED");
+                }
+            }
+
+            adminAction(action) {
+                if (!this.state.isAdmin) return;
+
+                switch(action) {
+                    case 'add_money':
+                        this.state.money += 1000000;
+                        break;
+                    case 'add_luck':
+                        this.state.luckMultiplier = 100;
+                        break;
+                    case 'give_godly':
+                        const godlyPool = ITEM_DATABASE.filter(i => i.rarity === 'GODLY');
+                        const g = godlyPool[0];
+                        if (!this.state.inventory[g.name]) this.state.inventory[g.name] = { ...g, count: 0 };
+                        this.state.inventory[g.name].count++;
+                        this.state.collection.add(g.name);
+                        break;
+                    case 'reset_data':
+                        if(confirm("WIPE EVERYTHING?")) {
+                            localStorage.clear();
+                            location.reload();
+                        }
+                        break;
+                    case 'toggle_glitch':
+                        this.state.isGlitchMode = !this.state.isGlitchMode;
+                        document.body.style.filter = this.state.isGlitchMode ? 'hue-rotate(90deg) invert(1)' : 'none';
+                        break;
+                    case 'unlock_all':
+                        ITEM_DATABASE.forEach(i => this.state.collection.add(i.name));
+                        break;
+                }
+                this.updateUI();
+                this.save();
+            }
+        }
+
+        /**
+         * GLOBAL HELPERS
+         */
+        const game = new RngGame();
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(`${tabId}-view`).classList.add('active');
+            event.target.classList.add('active');
+            
+            game.updateUI();
+        }
+
+        // Particle Background Logic
+        const canvas = document.createElement('canvas');
+        document.body.appendChild(canvas);
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.zIndex = '-1';
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.onresize = resize;
+        resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2;
+                this.speedX = Math.random() * 0.5 - 0.25;
+                this.speedY = Math.random() * 0.5 - 0.25;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.y > canvas.height) this.y = 0;
+            }
+            draw() {
+                ctx.fillStyle = '#222';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 100; i++) particles.push(new Particle());
+
+        function animate() {
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+    </script>
+</body>
+</html>
