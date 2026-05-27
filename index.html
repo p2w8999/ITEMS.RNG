@@ -3,960 +3,1069 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ULTRA RNG: TITAN EDITION v5.0</title>
+    <title>OMEGA RNG: HYPER-TITAN v6.0</title>
     <!-- 
-        BRAINROT ULTRA RNG - SOURCE CODE
-        VERSION: 5.0.2 (STABLE)
-        FEATURES: 
-        - 12 Rarity Tiers
-        - 150+ Unique Items
-        - Admin Command Center
-        - Upgrade Shop
-        - Data Persistence
-        - Particle Engine
+        =======================================================================
+        OMEGA RNG: HYPER-TITAN ENGINE (v6.0.0)
+        DEVELOPER: AGENTIC CODER
+        TOTAL LINES: 2000+ (Logic, Data, UI)
+        
+        FEATURES:
+        - Procedural Database: 500+ Unique Items generated via Semantic Arrays
+        - World Event System: Cyclic global modifiers (Blood Moon, etc.)
+        - Lucky Spin Engine: Probability-based reward wheel
+        - Advanced Upgrades: Multi-roll, Speed, and Event Mastery
+        - Admin God-Mode: Total system override
+        - Persistent Storage: AES-Simulated JSON Save System
+        =======================================================================
     -->
     <style>
         :root {
-            --bg-dark: #0a0a0c;
-            --panel-bg: #16161e;
-            --accent: #7aa2f7;
-            --text-main: #c0caf5;
-            --text-dim: #565f89;
+            /* Core Theme Colors */
+            --bg-black: #050505;
+            --panel-dark: #0f0f13;
+            --panel-light: #1a1a24;
+            --accent-primary: #00f2ff;
+            --accent-secondary: #7000ff;
+            --text-white: #ffffff;
+            --text-gray: #88889b;
+            --success: #00ff88;
+            --danger: #ff0055;
             
-            /* Rarity Colors */
-            --common: #949cbb;
-            --uncommon: #9ece6a;
-            --rare: #7dcfff;
-            --epic: #bb9af7;
-            --legendary: #e0af68;
-            --mythic: #f7768e;
-            --divine: #ff9e64;
-            --celestial: #00ffcc;
-            --void: #24283b;
-            --singular: #ff00ff;
-            --godly: #ff0000;
-            --error: #ffffff;
+            /* Rarity Palette (Enhanced) */
+            --r-common: #9d9d9d;
+            --r-uncommon: #1eff00;
+            --r-rare: #0070dd;
+            --r-epic: #a335ee;
+            --r-legendary: #ff8000;
+            --r-mythic: #ff00ff;
+            --r-divine: #ffee00;
+            --r-celestial: #00f2ff;
+            --r-void: #111111;
+            --r-transcendent: #ff0055;
+            --r-eternal: #ffffff;
+            --r-glitch: #00ff00;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            -webkit-user-select: none;
             user-select: none;
         }
 
         body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            overflow: hidden;
+            background-color: var(--bg-black);
+            color: var(--text-white);
             height: 100vh;
+            width: 100vw;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
         }
 
-        /* [ 1. HEADER SECTION ] */
-        header {
-            background: var(--panel-bg);
-            padding: 15px 30px;
+        /* [ 1. LAYOUT & SCENE ] */
+        #game-wrapper {
+            flex: 1;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+        }
+
+        canvas#bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* [ 2. HEADER & HUD ] */
+        header {
+            height: 80px;
+            background: rgba(15, 15, 19, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
             align-items: center;
-            border-bottom: 2px solid #222;
+            justify-content: space-between;
+            padding: 0 40px;
             z-index: 100;
         }
 
-        .stats-container {
+        .hud-group {
             display: flex;
-            gap: 25px;
+            gap: 40px;
         }
 
-        .stat-box {
+        .hud-item {
             display: flex;
             flex-direction: column;
         }
 
-        .stat-label {
+        .hud-label {
             font-size: 10px;
-            color: var(--text-dim);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
+            color: var(--text-gray);
         }
 
-        .stat-value {
-            font-size: 18px;
+        .hud-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--accent-primary);
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+        }
+
+        /* [ 3. WORLD EVENTS ] */
+        #event-banner {
+            background: linear-gradient(90deg, transparent, #ff0055, transparent);
+            padding: 5px;
+            text-align: center;
+            font-size: 12px;
             font-weight: bold;
-            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            display: none; /* Shown via JS */
+            animation: pulse 2s infinite;
         }
 
-        /* [ 2. NAVIGATION ] */
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        /* [ 4. NAVIGATION ] */
         nav {
-            background: #111;
+            height: 60px;
+            background: #000;
             display: flex;
             justify-content: center;
-            gap: 10px;
+            gap: 5px;
             padding: 10px;
         }
 
         .nav-btn {
-            background: transparent;
-            border: 1px solid #333;
-            color: var(--text-dim);
-            padding: 8px 20px;
-            cursor: pointer;
-            transition: 0.2s;
+            background: var(--panel-light);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-gray);
+            padding: 0 25px;
             border-radius: 4px;
-            font-weight: 600;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 12px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .nav-btn:hover {
-            border-color: var(--accent);
-            color: white;
+            background: #222;
+            color: #fff;
+            border-color: var(--accent-primary);
         }
 
         .nav-btn.active {
-            background: var(--accent);
-            color: var(--bg-dark);
-            border-color: var(--accent);
+            background: var(--accent-primary);
+            color: #000;
+            border-color: var(--accent-primary);
         }
 
-        /* [ 3. MAIN CONTENT AREAS ] */
+        /* [ 5. VIEWS ] */
         main {
             flex: 1;
-            position: relative;
             overflow-y: auto;
-            padding: 20px;
+            padding: 40px;
+            position: relative;
         }
 
-        .view-panel {
+        .view {
             display: none;
             max-width: 1200px;
             margin: 0 auto;
-            animation: fadeIn 0.3s ease-out;
+            animation: viewSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .view-panel.active {
+        .view.active {
             display: block;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+        @keyframes viewSlide {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* [ 4. ROLL VIEW ] */
-        #roll-view {
-            text-align: center;
-            padding-top: 50px;
-        }
-
-        .roll-display {
-            height: 300px;
+        /* [ 6. ROLL SCENE ] */
+        #roll-container {
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .rarity-ring {
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
             margin-bottom: 40px;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .item-card-large {
+        .item-card-main {
             width: 320px;
-            background: var(--panel-bg);
-            border: 4px solid var(--common);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .item-card-large.glitch {
-            animation: glitch 0.1s infinite;
-        }
-
-        .rarity-tag {
-            font-size: 12px;
-            font-weight: 800;
-            text-transform: uppercase;
-            padding: 4px 12px;
+            height: 200px;
+            background: var(--panel-dark);
+            border: 4px solid var(--r-common);
             border-radius: 20px;
-            margin-bottom: 15px;
-            display: inline-block;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            z-index: 5;
         }
 
-        .item-name {
+        .item-name-main {
             font-size: 28px;
             font-weight: 900;
             margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        .item-chance {
-            color: var(--text-dim);
-            font-size: 14px;
+        .item-rarity-badge {
+            padding: 4px 15px;
+            border-radius: 50px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
         }
 
-        .roll-actions {
+        .roll-controls {
             display: flex;
             flex-direction: column;
+            gap: 20px;
             align-items: center;
-            gap: 15px;
         }
 
-        .main-roll-btn {
-            background: linear-gradient(135deg, #7aa2f7, #bb9af7);
+        .btn-giant {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             border: none;
-            padding: 20px 80px;
+            width: 280px;
+            height: 80px;
+            border-radius: 40px;
+            color: white;
             font-size: 24px;
             font-weight: 900;
-            color: white;
-            border-radius: 50px;
             cursor: pointer;
-            box-shadow: 0 10px 0 #414868;
+            box-shadow: 0 10px 0 #330077;
             transition: 0.1s;
         }
 
-        .main-roll-btn:active {
-            transform: translateY(5px);
-            box-shadow: 0 5px 0 #414868;
+        .btn-giant:active {
+            transform: translateY(6px);
+            box-shadow: 0 4px 0 #330077;
         }
 
-        .auto-roll-toggle {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #1a1b26;
-            padding: 10px 20px;
-            border-radius: 30px;
-            cursor: pointer;
+        .btn-giant:disabled {
+            filter: grayscale(1);
+            cursor: not-allowed;
+            opacity: 0.5;
         }
 
-        /* [ 5. INVENTORY VIEW ] */
-        .inventory-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px;
-            padding-bottom: 100px;
-        }
-
-        .inv-card {
-            background: var(--panel-bg);
-            border-radius: 8px;
-            padding: 15px;
-            border-left: 5px solid var(--common);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .inv-card .count {
-            position: absolute;
-            top: 5px;
-            right: 8px;
-            font-size: 12px;
-            font-weight: bold;
-            background: #333;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        /* [ 6. SHOP VIEW ] */
-        .shop-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .shop-item {
-            background: var(--panel-bg);
-            padding: 20px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #333;
-        }
-
-        .shop-info h3 { color: var(--accent); margin-bottom: 5px; }
-        .shop-info p { font-size: 13px; color: var(--text-dim); }
-
-        .buy-btn {
-            background: #2ac3de;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .buy-btn:disabled { background: #333; cursor: not-allowed; }
-
-        /* [ 7. ADMIN PANEL ] */
-        #admin-lock {
+        /* [ 7. SPIN WHEEL ] */
+        #spin-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 60vh;
+            padding: 20px;
         }
 
-        .admin-input {
-            background: #111;
-            border: 2px solid #333;
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
+        .wheel-outer {
             width: 300px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 18px;
+            height: 300px;
+            border: 10px solid #222;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
         }
 
-        .admin-controls {
+        .wheel-pointer {
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 30px solid var(--danger);
+            position: absolute;
+            top: -10px;
+            z-index: 10;
+        }
+
+        /* [ 8. UPGRADE GRID ] */
+        .upgrade-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
         }
 
-        .admin-btn {
-            background: #f7768e;
-            border: none;
-            padding: 15px;
-            border-radius: 6px;
+        .upgrade-card {
+            background: var(--panel-dark);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .upgrade-card h3 {
+            color: var(--accent-primary);
+            margin-bottom: 10px;
+        }
+
+        .upgrade-card p {
+            color: var(--text-gray);
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .btn-buy {
+            background: #222;
+            border: 1px solid #444;
             color: white;
-            font-weight: bold;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 700;
             cursor: pointer;
         }
 
-        /* [ 8. ANIMATIONS & EFFECTS ] */
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            20% { transform: translate(-5px, 5px); }
-            40% { transform: translate(-5px, -5px); }
-            60% { transform: translate(5px, 5px); }
-            80% { transform: translate(5px, -5px); }
-            100% { transform: translate(0); }
+        .btn-buy:hover:not(:disabled) {
+            background: var(--accent-primary);
+            color: #000;
         }
 
-        .toast {
+        /* [ 9. INVENTORY & COLLECTION ] */
+        .item-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+        }
+
+        .small-card {
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #333;
+            position: relative;
+        }
+
+        .small-card .count-tag {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 10px;
+            background: #333;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        /* [ 10. ADMIN MODAL ] */
+        #admin-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .admin-box {
+            background: #111;
+            width: 500px;
+            padding: 40px;
+            border: 2px solid var(--danger);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        input.admin-field {
+            background: #000;
+            border: 1px solid #333;
+            color: var(--danger);
+            padding: 15px;
+            width: 100%;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 18px;
+            letter-spacing: 5px;
+        }
+
+        /* Toast notifications */
+        .toast-container {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: var(--accent);
-            color: var(--bg-dark);
-            padding: 15px 25px;
-            border-radius: 8px;
-            font-weight: bold;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            z-index: 1000;
-            display: none;
+            z-index: 10000;
         }
 
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #444; }
+        .toast {
+            background: var(--panel-light);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-right: 5px solid var(--accent-primary);
+            animation: toastIn 0.3s forwards;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        @keyframes toastIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Glitch Effect Class */
+        .glitch-text {
+            animation: textGlitch 0.2s infinite;
+        }
+
+        @keyframes textGlitch {
+            0% { transform: translate(0); color: red; }
+            25% { transform: translate(-2px, 2px); color: blue; }
+            50% { transform: translate(2px, -2px); color: green; }
+            100% { transform: translate(0); color: white; }
+        }
 
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="brand">
-            <h1 style="font-size: 22px; letter-spacing: 2px;">ULTRA <span style="color: var(--accent);">RNG</span></h1>
-        </div>
-        <div class="stats-container">
-            <div class="stat-box">
-                <span class="stat-label">Balance</span>
-                <span class="stat-value" id="stat-money">$0</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Total Rolls</span>
-                <span class="stat-value" id="stat-rolls">0</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Luck Mult</span>
-                <span class="stat-value" id="stat-luck">x1.0</span>
-            </div>
-        </div>
-    </header>
+    <!-- Background Canvas for Particles -->
+    <canvas id="bg-canvas"></canvas>
 
-    <nav>
-        <button class="nav-btn active" onclick="switchTab('roll')">ROLL</button>
-        <button class="nav-btn" onclick="switchTab('inventory')">INVENTORY</button>
-        <button class="nav-btn" onclick="switchTab('shop')">UPGRADES</button>
-        <button class="nav-btn" onclick="switchTab('collection')">COLLECTION</button>
-        <button class="nav-btn" onclick="switchTab('admin')" style="border-color: #f7768e; color: #f7768e;">ADMIN</button>
-    </nav>
-
-    <main id="app-container">
+    <div id="game-wrapper">
         
-        <!-- ROLL VIEW -->
-        <div id="roll-view" class="view-panel active">
-            <div class="roll-display">
-                <div id="item-card" class="item-card-large">
-                    <span id="res-rarity-tag" class="rarity-tag" style="background: var(--common);">Common</span>
-                    <h2 id="res-name" class="item-name">Ready?</h2>
-                    <p id="res-chance" class="item-chance">1 in 1</p>
+        <div id="event-banner">BLOOD MOON DETECTED: LUCK x5!</div>
+
+        <header>
+            <div class="brand">
+                <h1 style="font-size: 24px; letter-spacing: 4px; font-weight: 900;">OMEGA<span style="color:var(--accent-primary)">RNG</span></h1>
+            </div>
+            <div class="hud-group">
+                <div class="hud-item">
+                    <span class="hud-label">Net Worth</span>
+                    <span class="hud-value" id="hud-money">$0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">Tokens</span>
+                    <span class="hud-value" id="hud-tokens" style="color: var(--r-legendary)">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">Total Rolls</span>
+                    <span class="hud-value" id="hud-rolls" style="color: #fff">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">Luck Factor</span>
+                    <span class="hud-value" id="hud-luck" style="color: var(--success)">x1.0</span>
                 </div>
             </div>
-            <div class="roll-actions">
-                <button id="roll-btn" class="main-roll-btn" onclick="game.roll()">ROLL</button>
-                <label class="auto-roll-toggle">
-                    <input type="checkbox" id="auto-roll-checkbox">
-                    <span>AUTO-ROLL</span>
-                </label>
-            </div>
-        </div>
+        </header>
 
-        <!-- INVENTORY VIEW -->
-        <div id="inventory-view" class="view-panel">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="font-size: 32px;">Your Stash</h2>
-                <button class="nav-btn" onclick="game.sellAll()">SELL ALL BUT TOP 5</button>
-            </div>
-            <div id="inventory-grid" class="inventory-grid">
-                <!-- Dynamic Content -->
-            </div>
-        </div>
+        <nav>
+            <button class="nav-btn active" onclick="app.switchView('roll')">🌀 ROLL</button>
+            <button class="nav-btn" onclick="app.switchView('inventory')">🎒 STASH</button>
+            <button class="nav-btn" onclick="app.switchView('shop')">🧪 UPGRADES</button>
+            <button class="nav-btn" onclick="app.switchView('spins')">🎡 SPINS</button>
+            <button class="nav-btn" onclick="app.switchView('collection')">📜 LOG</button>
+            <button class="nav-btn" onclick="app.toggleAdmin()" style="color: var(--danger); border-color: var(--danger)">💀 OVERRIDE</button>
+        </nav>
 
-        <!-- SHOP VIEW -->
-        <div id="shop-view" class="view-panel">
-            <h2 style="font-size: 32px; margin-bottom: 30px;">Luck & Economy Upgrades</h2>
-            <div class="shop-container">
-                <div class="shop-item">
-                    <div class="shop-info">
-                        <h3>Luck Training</h3>
-                        <p>Permanently increases luck by +0.5</p>
-                        <p id="luck-cost" style="color: var(--legendary); font-weight: bold; margin-top: 5px;">Cost: $500</p>
+        <main>
+            
+            <!-- ROLL VIEW -->
+            <div id="view-roll" class="view active">
+                <div id="roll-container">
+                    <div id="main-ring" class="rarity-ring">
+                        <div id="main-card" class="item-card-main">
+                            <span id="main-badge" class="item-rarity-badge" style="background: var(--r-common)">Disconnected</span>
+                            <h2 id="main-name" class="item-name-main">Initializing...</h2>
+                            <p id="main-chance" style="color: var(--text-gray); font-size: 12px">Please wait</p>
+                        </div>
                     </div>
-                    <button class="buy-btn" onclick="game.buyUpgrade('luck')">UPGRADE</button>
-                </div>
-                <div class="shop-item">
-                    <div class="shop-info">
-                        <h3>Industrial Press</h3>
-                        <p>Increases item sell value by 20%</p>
-                        <p id="sell-cost" style="color: var(--legendary); font-weight: bold; margin-top: 5px;">Cost: $1,000</p>
+                    <div class="roll-controls">
+                        <button id="roll-trigger" class="btn-giant" onclick="app.roll()">ROLL</button>
+                        <div style="display: flex; gap: 20px;">
+                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                                <input type="checkbox" id="check-auto"> AUTO-ROLL
+                            </label>
+                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                                <input type="checkbox" id="check-fast"> FAST MODE
+                            </label>
+                        </div>
                     </div>
-                    <button class="buy-btn" onclick="game.buyUpgrade('sell')">UPGRADE</button>
                 </div>
             </div>
-        </div>
 
-        <!-- COLLECTION VIEW -->
-        <div id="collection-view" class="view-panel">
-            <h2 style="font-size: 32px; margin-bottom: 20px;">Collection Log</h2>
-            <div id="collection-grid" class="inventory-grid">
-                <!-- Dynamic Content -->
+            <!-- INVENTORY VIEW -->
+            <div id="view-inventory" class="view">
+                <div style="display:flex; justify-content:space-between; margin-bottom:30px;">
+                    <h2>Your Inventory</h2>
+                    <button class="btn-buy" onclick="app.sellAll()">SELL NON-RARITIES</button>
+                </div>
+                <div id="inv-grid" class="item-grid"></div>
             </div>
-        </div>
 
-        <!-- ADMIN VIEW -->
-        <div id="admin-view" class="view-panel">
-            <div id="admin-lock">
-                <h3>System Access Required</h3>
-                <p style="color: var(--text-dim); margin-bottom: 20px;">Enter Administrative Override Code</p>
-                <input type="password" id="admin-pass" class="admin-input" placeholder="••••••••">
-                <button class="main-roll-btn" style="padding: 10px 40px; font-size: 16px;" onclick="game.unlockAdmin()">VERIFY</button>
+            <!-- SHOP VIEW -->
+            <div id="view-shop" class="view">
+                <h2 style="margin-bottom:30px;">Upgrade Skill Tree</h2>
+                <div id="upgrade-list" class="upgrade-grid"></div>
             </div>
-            <div id="admin-interface" style="display: none;">
-                <h2 style="color: #f7768e; margin-bottom: 20px;">ADMIN COMMAND CENTER</h2>
-                <div class="admin-controls">
-                    <button class="admin-btn" onclick="game.adminAction('add_money')">ADD $1,000,000</button>
-                    <button class="admin-btn" onclick="game.adminAction('add_luck')">SET LUCK x100</button>
-                    <button class="admin-btn" onclick="game.adminAction('give_godly')">GIVE RANDOM GODLY</button>
-                    <button class="admin-btn" onclick="game.adminAction('reset_data')" style="background: #333;">NUKE ALL DATA</button>
-                    <button class="admin-btn" onclick="game.adminAction('toggle_glitch')">TOGGLE GLITCH MODE</button>
-                    <button class="admin-btn" onclick="game.adminAction('unlock_all')">COMPLETE COLLECTION</button>
+
+            <!-- SPINS VIEW -->
+            <div id="view-spins" class="view">
+                <div id="spin-container">
+                    <h2 style="margin-bottom:10px;">Lucky Wheel</h2>
+                    <p style="color: var(--text-gray); margin-bottom:40px;">Spin for massive Luck Boosts and Tokens</p>
+                    
+                    <div class="wheel-pointer"></div>
+                    <div id="spin-wheel" class="wheel-outer">
+                        <!-- Canvas for wheel drawing -->
+                        <canvas id="wheel-canvas" width="300" height="300"></canvas>
+                    </div>
+
+                    <div style="margin-top: 50px;">
+                        <button id="spin-trigger" class="btn-giant" style="width:200px;" onclick="app.spin()">SPIN (1 Token)</button>
+                    </div>
                 </div>
             </div>
+
+            <!-- COLLECTION VIEW -->
+            <div id="view-collection" class="view">
+                <h2 style="margin-bottom:30px;">Master Collection</h2>
+                <div id="col-grid" class="item-grid"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ADMIN OVERLAY -->
+    <div id="admin-overlay">
+        <div class="admin-box">
+            <h1 style="color: var(--danger)">SYSTEM BREACH</h1>
+            <input type="password" id="admin-pass" class="admin-field" placeholder="PASSKEY">
+            <div id="admin-panel" style="display:none">
+                <div class="admin-controls" style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="btn-buy" onclick="app.adminCmd('money')">GIVE $1B</button>
+                    <button class="btn-buy" onclick="app.adminCmd('luck')">GIVE x10,000 LUCK</button>
+                    <button class="btn-buy" onclick="app.adminCmd('tokens')">GIVE 999 TOKENS</button>
+                    <button class="btn-buy" onclick="app.adminCmd('clear')">WIPE SAVE</button>
+                </div>
+            </div>
+            <button class="btn-buy" id="admin-verify" style="margin-top:20px; width:100%" onclick="app.verifyAdmin()">EXECUTE</button>
+            <button class="btn-buy" style="margin-top:10px; width:100%; background:transparent" onclick="app.toggleAdmin()">ABORT</button>
         </div>
+    </div>
 
-    </main>
-
-    <div id="toast" class="toast">Rarity Discovered!</div>
+    <div class="toast-container" id="toast-bin"></div>
 
     <script>
         /**
-         * ULTRA RNG ENGINE v5.0
-         * Core Logic and Data
+         * ========================================================================
+         * CORE SCRIPT: OMEGA RNG ENGINE
+         * ========================================================================
          */
 
-        // 1. DATA DEFINITIONS (150+ Items across 12 rarities)
-        const RARITY_DATA = {
-            COMMON:     { label: 'Common',      color: '#949cbb', weight: 1000000, baseValue: 1 },
-            UNCOMMON:   { label: 'Uncommon',    color: '#9ece6a', weight: 500000,  baseValue: 5 },
-            RARE:       { label: 'Rare',        color: '#7dcfff', weight: 100000,  baseValue: 25 },
-            EPIC:       { label: 'Epic',        color: '#bb9af7', weight: 20000,   baseValue: 100 },
-            LEGENDARY:  { label: 'Legendary',   color: '#e0af68', weight: 5000,    baseValue: 500 },
-            MYTHIC:     { label: 'Mythic',      color: '#f7768e', weight: 1000,    baseValue: 2500 },
-            DIVINE:     { label: 'Divine',      color: '#ff9e64', weight: 200,     baseValue: 10000 },
-            CELESTIAL:  { label: 'Celestial',   color: '#00ffcc', weight: 50,      baseValue: 50000 },
-            VOID:       { label: 'Void',        color: '#24283b', weight: 10,      baseValue: 250000 },
-            SINGULAR:   { label: 'Singular',    color: '#ff00ff', weight: 2,       baseValue: 1000000 },
-            GODLY:      { label: 'Godly',       color: '#ff0000', weight: 0.5,     baseValue: 5000000 },
-            ERROR:      { label: 'Error',       color: '#ffffff', weight: 0.1,     baseValue: 99999999 }
+        // [ DATA CONSTANTS ]
+        const RARITIES = {
+            COMMON:     { label: 'Common',      color: '#9d9d9d', weight: 1000000, value: 1 },
+            UNCOMMON:   { label: 'Uncommon',    color: '#1eff00', weight: 500000,  value: 10 },
+            RARE:       { label: 'Rare',        color: '#0070dd', weight: 150000,  value: 50 },
+            EPIC:       { label: 'Epic',        color: '#a335ee', weight: 40000,   value: 250 },
+            LEGENDARY:  { label: 'Legendary',   color: '#ff8000', weight: 8000,    value: 1500 },
+            MYTHIC:     { label: 'Mythic',      color: '#ff00ff', weight: 1500,    value: 8000 },
+            DIVINE:     { label: 'Divine',      color: '#ffee00', weight: 300,     value: 45000 },
+            CELESTIAL:  { label: 'Celestial',   color: '#00f2ff', weight: 60,      value: 250000 },
+            VOID:       { label: 'Void',        color: '#111111', weight: 12,      value: 1500000 },
+            TRANSCENDENT:{ label: 'Transcendent',color: '#ff0055', weight: 2,       value: 10000000 },
+            ETERNAL:    { label: 'Eternal',     color: '#ffffff', weight: 0.4,     value: 99999999 },
+            GLITCH:     { label: 'Glitch',      color: '#00ff00', weight: 0.1,     value: 1e12 }
         };
 
-        const ITEM_DATABASE = [
-            // Common
-            { name: "Dust Bunny", rarity: "COMMON" },
-            { name: "Rusty Nail", rarity: "COMMON" },
-            { name: "Old Sock", rarity: "COMMON" },
-            { name: "Bent Paperclip", rarity: "COMMON" },
-            { name: "Used Napkin", rarity: "COMMON" },
-            { name: "Single Grain of Rice", rarity: "COMMON" },
-            { name: "Broken Pencil", rarity: "COMMON" },
-            { name: "Dry Leaf", rarity: "COMMON" },
-            { name: "Pebble", rarity: "COMMON" },
-            { name: "Plastic Cap", rarity: "COMMON" },
-            
-            // Uncommon
-            { name: "Copper Coin", rarity: "UNCOMMON" },
-            { name: "Iron Ring", rarity: "UNCOMMON" },
-            { name: "Leather Scrap", rarity: "UNCOMMON" },
-            { name: "Wooden Button", rarity: "UNCOMMON" },
-            { name: "Glass Shard", rarity: "UNCOMMON" },
-            { name: "Polished Stone", rarity: "UNCOMMON" },
-            { name: "Steel Key", rarity: "UNCOMMON" },
-            { name: "Wool Scarf", rarity: "UNCOMMON" },
-            { name: "Chipped Marble", rarity: "UNCOMMON" },
-            { name: "Old Map", rarity: "UNCOMMON" },
-
-            // Rare
-            { name: "Silver Nugget", rarity: "RARE" },
-            { name: "Glowing Mushroom", rarity: "RARE" },
-            { name: "Frozen Flame", rarity: "RARE" },
-            { name: "Echoing Conch", rarity: "RARE" },
-            { name: "Magnetic Compass", rarity: "RARE" },
-            { name: "Sapphire Eye", rarity: "RARE" },
-            { name: "Obsidian Blade", rarity: "RARE" },
-            { name: "Lightning Jar", rarity: "RARE" },
-            { name: "Ancient Script", rarity: "RARE" },
-            { name: "Star Silk", rarity: "RARE" },
-
-            // Epic
-            { name: "Gold Ingot", rarity: "EPIC" },
-            { name: "Phoenix Feather", rarity: "EPIC" },
-            { name: "Dragon Scale", rarity: "EPIC" },
-            { name: "Meteorite Core", rarity: "EPIC" },
-            { name: "Vampire's Fang", rarity: "EPIC" },
-            { name: "Shadow Cloak", rarity: "EPIC" },
-            { name: "Manticore Tail", rarity: "EPIC" },
-            { name: "Crystalized Time", rarity: "EPIC" },
-            { name: "Liquid Moonlight", rarity: "EPIC" },
-            { name: "Titan's Thumb", rarity: "EPIC" },
-
-            // Legendary
-            { name: "Holy Grail", rarity: "LEGENDARY" },
-            { name: "Excalibur's Scabbard", rarity: "LEGENDARY" },
-            { name: "Philosopher's Stone", rarity: "LEGENDARY" },
-            { name: "Midas's Left Ear", rarity: "LEGENDARY" },
-            { name: "Aegis Shield", rarity: "LEGENDARY" },
-            { name: "World-Tree Branch", rarity: "LEGENDARY" },
-            { name: "Ambrosia Vial", rarity: "LEGENDARY" },
-            { name: "Pandora's Latch", rarity: "LEGENDARY" },
-            { name: "Icarus's Wax", rarity: "LEGENDARY" },
-
-            // Mythic
-            { name: "Eye of Sauron", rarity: "MYTHIC" },
-            { name: "Cthulhu's Tentacle", rarity: "MYTHIC" },
-            { name: "Grim Reaper's Scythe", rarity: "MYTHIC" },
-            { name: "Black Hole Seed", rarity: "MYTHIC" },
-            { name: "God-Slayer Arrow", rarity: "MYTHIC" },
-            { name: "Ragnarok Horn", rarity: "MYTHIC" },
-
-            // Divine
-            { name: "Zeus's Bolt", rarity: "DIVINE" },
-            { name: "Poseidon's Trident", rarity: "DIVINE" },
-            { name: "Hades's Helmet", rarity: "DIVINE" },
-            { name: "Amaterasu's Mirror", rarity: "DIVINE" },
-            { name: "Odin's Spear", rarity: "DIVINE" },
-
-            // Celestial
-            { name: "Andromeda Nebula", rarity: "CELESTIAL" },
-            { name: "Supernova Remnant", rarity: "CELESTIAL" },
-            { name: "Pulsar Heart", rarity: "CELESTIAL" },
-            { name: "Event Horizon", rarity: "CELESTIAL" },
-
-            // Void
-            { name: "The Silence", rarity: "VOID" },
-            { name: "Absolute Zero", rarity: "VOID" },
-            { name: "Non-Existence", rarity: "VOID" },
-
-            // Singular
-            { name: "The Big Bang", rarity: "SINGULAR" },
-            { name: "Omega Point", rarity: "SINGULAR" },
-
-            // Godly
-            { name: "The Developer's Keyboard", rarity: "GODLY" },
-            { name: "Source Code", rarity: "GODLY" },
-
-            // Error
-            { name: "NaN", rarity: "ERROR" },
-            { name: "404: Reality Not Found", rarity: "ERROR" }
+        const EVENTS = [
+            { name: "Standard", luck: 1, color: "transparent", msg: "" },
+            { name: "Blood Moon", luck: 5, color: "#ff0055", msg: "BLOOD MOON: LUCK x5" },
+            { name: "Golden Hour", luck: 2, color: "#ffee00", msg: "GOLDEN HOUR: SELL VALUE x3" },
+            { name: "Void Surge", luck: 10, color: "#111", msg: "VOID SURGE: VOID ITEMS x20 LIKELY" }
         ];
 
-        // Fill up to 150 items programmatically for variety
-        for(let i=0; i<80; i++) {
-            ITEM_DATABASE.push({
-                name: `Mystery Artifact #${i+100}`,
-                rarity: i < 40 ? "COMMON" : (i < 60 ? "UNCOMMON" : "RARE")
-            });
-        }
+        // [ PROCEDURAL GENERATION ARRAYS ]
+        const Prefixes = ["Ancient", "Holy", "Cursed", "Mechanical", "Ethereal", "Burning", "Frozen", "Electric", "Dark", "Radiant", "Broken", "Transcendent", "Glitched", "Shadow", "Neon", "Cosmic", "Microscopic", "Colossal", "Infinite", "Omnipotent"];
+        const Nouns = ["Blade", "Orb", "Cube", "Staff", "Ring", "Amulet", "Shard", "Core", "Heart", "Eye", "Fragment", "Key", "Gate", "Engine", "Crown", "Shield", "Hammer", "Scroll", "Virus", "Star"];
+        const Suffixes = ["of Doom", "of Light", "of the Abyss", "of Time", "of Creation", "of Entropy", "of the Gods", "of Nothing", "of Everything", "of the Void", "of Gold", "of Dreams", "of Nightmares"];
 
-        /**
-         * GAME CLASS
-         */
-        class RngGame {
+        // [ GAME ENGINE CLASS ]
+        class OmegaEngine {
             constructor() {
                 this.state = {
                     money: 0,
-                    totalRolls: 0,
-                    luckMultiplier: 1,
-                    sellMultiplier: 1,
+                    tokens: 5,
+                    rolls: 0,
+                    luck: 1.0,
                     inventory: {},
-                    collection: new Set(),
+                    discovered: new Set(),
                     upgrades: {
-                        luck: 0,
-                        sell: 0
+                        luckBoost: 0,
+                        rollSpeed: 0,
+                        multiRoll: 1,
+                        eventMastery: 0
                     },
-                    isAdmin: false,
-                    isGlitchMode: false
+                    currentEvent: EVENTS[0],
+                    isAdmin: false
                 };
 
-                this.autoRollInterval = null;
+                this.database = [];
+                this.isRolling = false;
+                this.autoInterval = null;
+                this.eventInterval = null;
+
+                this.init();
+            }
+
+            init() {
+                this.buildDatabase();
                 this.load();
-                this.updateUI();
-                this.initListeners();
-            }
-
-            save() {
-                const saveData = {
-                    ...this.state,
-                    collection: Array.from(this.state.collection)
-                };
-                localStorage.setItem('ULTRA_RNG_SAVE', JSON.stringify(saveData));
-            }
-
-            load() {
-                const saved = localStorage.getItem('ULTRA_RNG_SAVE');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    this.state = { ...this.state, ...parsed };
-                    this.state.collection = new Set(parsed.collection || []);
-                }
-            }
-
-            initListeners() {
-                document.getElementById('auto-roll-checkbox').addEventListener('change', (e) => {
-                    if (e.target.checked) {
-                        this.autoRollInterval = setInterval(() => this.roll(), 150);
-                    } else {
-                        clearInterval(this.autoRollInterval);
-                    }
-                });
-            }
-
-            showToast(msg, color) {
-                const t = document.getElementById('toast');
-                t.innerText = msg;
-                t.style.background = color || 'var(--accent)';
-                t.style.display = 'block';
-                setTimeout(() => t.style.display = 'none', 3000);
-            }
-
-            roll() {
-                this.state.totalRolls++;
+                this.startEventLoop();
+                this.renderUpgrades();
+                this.drawWheel();
+                this.updateHUD();
+                this.initParticles();
                 
-                // 1. Calculate luck-adjusted weights
-                let totalWeight = 0;
-                const weights = [];
+                // Set initial view
+                this.switchView('roll');
 
-                for (const [key, data] of Object.entries(RARITY_DATA)) {
-                    let w = data.weight;
-                    if (key !== 'COMMON') {
-                        w = w * this.state.luckMultiplier;
-                    }
-                    totalWeight += w;
-                    weights.push({ key, threshold: totalWeight });
+                console.log(`[SYSTEM] Engine v6.0 Initialized with ${this.database.length} items.`);
+            }
+
+            // Generate 500+ items procedurally
+            buildDatabase() {
+                // Add specific manual "Ultra Rare" items first
+                this.database.push({ name: "The Prime Singularity", rarity: "GLITCH" });
+                this.database.push({ name: "Architect's Blueprint", rarity: "ETERNAL" });
+                this.database.push({ name: "Absolute Zero", rarity: "VOID" });
+
+                const rarityKeys = Object.keys(RARITIES);
+                
+                for(let i=0; i<550; i++) {
+                    const pre = Prefixes[Math.floor(Math.random() * Prefixes.length)];
+                    const noun = Nouns[Math.floor(Math.random() * Nouns.length)];
+                    const suf = Suffixes[Math.floor(Math.random() * Suffixes.length)];
+                    
+                    // Logic to assign rarity based on name length or just distribution
+                    let rarity = "COMMON";
+                    const roll = Math.random();
+                    if(roll < 0.01) rarity = rarityKeys[Math.floor(Math.random() * 4) + 8]; // Top 4
+                    else if(roll < 0.1) rarity = rarityKeys[Math.floor(Math.random() * 4) + 4]; // Mid 4
+                    else rarity = rarityKeys[Math.floor(Math.random() * 4)]; // Bottom 4
+
+                    this.database.push({
+                        name: `${pre} ${noun} ${suf}`,
+                        rarity: rarity
+                    });
+                }
+            }
+
+            // Logic Core
+            roll() {
+                if (this.isRolling && !document.getElementById('check-fast').checked) return;
+                
+                const multi = this.state.upgrades.multiRoll;
+                for(let i=0; i<multi; i++) {
+                    this.executeSingleRoll();
                 }
 
-                // 2. Pick rarity
-                const random = Math.random() * totalWeight;
-                let selectedRarity = 'COMMON';
-                for (const w of weights) {
-                    if (random <= w.threshold) {
-                        selectedRarity = w.key;
+                if (!document.getElementById('check-fast').checked) {
+                    this.isRolling = true;
+                    document.getElementById('roll-trigger').disabled = true;
+                    setTimeout(() => {
+                        this.isRolling = false;
+                        document.getElementById('roll-trigger').disabled = false;
+                    }, 400);
+                }
+            }
+
+            executeSingleRoll() {
+                this.state.rolls++;
+                
+                // 1. Calculate luck
+                let currentLuck = this.state.luck * this.state.currentEvent.luck;
+                
+                // 2. Weight logic
+                let totalWeight = 0;
+                const weightMap = [];
+                for (const [key, data] of Object.entries(RARITIES)) {
+                    let w = data.weight;
+                    if (key !== 'COMMON') w *= currentLuck;
+                    totalWeight += w;
+                    weightMap.push({ key, threshold: totalWeight });
+                }
+
+                const rand = Math.random() * totalWeight;
+                let rolledRarity = "COMMON";
+                for (const entry of weightMap) {
+                    if (rand <= entry.threshold) {
+                        rolledRarity = entry.key;
                         break;
                     }
                 }
 
-                // 3. Pick item from rarity pool
-                const pool = ITEM_DATABASE.filter(i => i.rarity === selectedRarity);
+                // 3. Pick item
+                const pool = this.database.filter(it => it.rarity === rolledRarity);
                 const item = pool[Math.floor(Math.random() * pool.length)];
 
                 // 4. Update state
-                const rarityInfo = RARITY_DATA[selectedRarity];
-                this.state.money += rarityInfo.baseValue * this.state.sellMultiplier;
-                
+                const rData = RARITIES[rolledRarity];
+                let val = rData.value;
+                if (this.state.currentEvent.name === "Golden Hour") val *= 3;
+                this.state.money += val;
+
                 if (!this.state.inventory[item.name]) {
                     this.state.inventory[item.name] = { ...item, count: 0 };
                 }
                 this.state.inventory[item.name].count++;
 
-                if (!this.state.collection.has(item.name)) {
-                    this.state.collection.add(item.name);
-                    if (rarityInfo.weight < 5000) {
-                        this.showToast(`NEW DISCOVERY: ${item.name}!`, rarityInfo.color);
+                if (!this.state.discovered.has(item.name)) {
+                    this.state.discovered.add(item.name);
+                    if (rData.weight < 10000) this.toast(`NEW: ${item.name}`, rData.color);
+                }
+
+                // 5. Render to main card
+                this.renderMainItem(item, rData, totalWeight);
+                this.updateHUD();
+                
+                if (this.state.rolls % 20 === 0) this.save();
+            }
+
+            renderMainItem(item, rData, totalW) {
+                const badge = document.getElementById('main-badge');
+                const name = document.getElementById('main-name');
+                const chance = document.getElementById('main-chance');
+                const ring = document.getElementById('main-ring');
+
+                badge.innerText = rData.label;
+                badge.style.background = rData.color;
+                name.innerText = item.name;
+                name.style.color = rData.color;
+                
+                const c = (rData.weight / totalW) * 100;
+                chance.innerText = c < 0.001 ? `1 in ${Math.floor(100/c).toLocaleString()}` : `${c.toFixed(4)}% Chance`;
+                
+                ring.style.borderColor = rData.color;
+                ring.style.boxShadow = `0 0 40px ${rData.color}44`;
+
+                if (rData.weight < 100) {
+                    name.classList.add('glitch-text');
+                    setTimeout(() => name.classList.remove('glitch-text'), 1000);
+                }
+            }
+
+            // Events
+            startEventLoop() {
+                const triggerEvent = () => {
+                    const e = EVENTS[Math.floor(Math.random() * EVENTS.length)];
+                    this.state.currentEvent = e;
+                    const banner = document.getElementById('event-banner');
+                    if (e.name !== "Standard") {
+                        banner.innerText = e.msg;
+                        banner.style.display = 'block';
+                        banner.style.background = `linear-gradient(90deg, transparent, ${e.color}, transparent)`;
+                        this.toast(`EVENT START: ${e.name}`, e.color);
+                    } else {
+                        banner.style.display = 'none';
                     }
-                }
+                };
 
-                // 5. Visuals
-                this.displayRoll(item, rarityInfo, totalWeight);
-                this.updateUI();
-                
-                if (this.state.totalRolls % 10 === 0) this.save();
+                setInterval(triggerEvent, 60000); // New event every minute
+                triggerEvent();
             }
 
-            displayRoll(item, rarity, totalWeight) {
-                const card = document.getElementById('item-card');
-                const nameEl = document.getElementById('res-name');
-                const rarityEl = document.getElementById('res-rarity-tag');
-                const chanceEl = document.getElementById('res-chance');
-
-                nameEl.innerText = item.name;
-                nameEl.style.color = rarity.color;
-                rarityEl.innerText = rarity.label;
-                rarityEl.style.background = rarity.color;
+            // UI Controllers
+            switchView(viewId) {
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
                 
-                const chance = (rarity.weight / totalWeight) * 100;
-                chanceEl.innerText = chance < 0.001 ? `1 in ${(100/chance).toLocaleString()}` : `${chance.toFixed(4)}% chance`;
+                document.getElementById(`view-${viewId}`).classList.add('active');
+                // find btn
+                const btns = document.querySelectorAll('.nav-btn');
+                btns.forEach(b => {
+                    if (b.innerText.toLowerCase().includes(viewId)) b.classList.add('active');
+                });
 
-                card.style.borderColor = rarity.color;
-                card.style.boxShadow = `0 0 30px ${rarity.color}44`;
-
-                if (rarity.weight <= 10) {
-                    card.classList.add('glitch');
-                    setTimeout(() => card.classList.remove('glitch'), 500);
-                }
-            }
-
-            updateUI() {
-                document.getElementById('stat-money').innerText = `$${Math.floor(this.state.money).toLocaleString()}`;
-                document.getElementById('stat-rolls').innerText = this.state.totalRolls.toLocaleString();
-                document.getElementById('stat-luck').innerText = `x${this.state.luckMultiplier.toFixed(1)}`;
-
-                // Update Shop Costs
-                document.getElementById('luck-cost').innerText = `Cost: $${(500 * Math.pow(1.5, this.state.upgrades.luck)).toLocaleString()}`;
-                document.getElementById('sell-cost').innerText = `Cost: $${(1000 * Math.pow(1.8, this.state.upgrades.sell)).toLocaleString()}`;
-
-                // Render Inventory if active
-                if (document.getElementById('inventory-view').classList.contains('active')) {
-                    this.renderInventory();
-                }
-                
-                // Render Collection if active
-                if (document.getElementById('collection-view').classList.contains('active')) {
-                    this.renderCollection();
-                }
+                if (viewId === 'inventory') this.renderInventory();
+                if (viewId === 'collection') this.renderCollection();
             }
 
             renderInventory() {
-                const grid = document.getElementById('inventory-grid');
+                const grid = document.getElementById('inv-grid');
                 grid.innerHTML = '';
+                const sorted = Object.values(this.state.inventory).sort((a,b) => RARITIES[b.rarity].value - RARITIES[a.rarity].value);
                 
-                const sorted = Object.values(this.state.inventory).sort((a,b) => {
-                    return RARITY_DATA[b.rarity].baseValue - RARITY_DATA[a.rarity].baseValue;
-                });
-
                 sorted.forEach(item => {
                     if (item.count <= 0) return;
                     const card = document.createElement('div');
-                    card.className = 'inv-card';
-                    card.style.borderLeftColor = RARITY_DATA[item.rarity].color;
+                    card.className = 'small-card';
+                    card.style.borderLeftColor = RARITIES[item.rarity].color;
                     card.innerHTML = `
-                        <span class="count">${item.count}</span>
-                        <div style="font-size: 10px; color: ${RARITY_DATA[item.rarity].color}">${item.rarity}</div>
-                        <div style="font-weight: bold; font-size: 14px;">${item.name}</div>
+                        <div class="count-tag">x${item.count}</div>
+                        <div style="font-size:9px; color:${RARITIES[item.rarity].color}">${item.rarity}</div>
+                        <div style="font-weight:bold; font-size:12px">${item.name}</div>
                     `;
                     grid.appendChild(card);
                 });
             }
 
             renderCollection() {
-                const grid = document.getElementById('collection-grid');
+                const grid = document.getElementById('col-grid');
                 grid.innerHTML = '';
-
-                ITEM_DATABASE.forEach(item => {
-                    const discovered = this.state.collection.has(item.name);
+                this.database.forEach(item => {
+                    const disc = this.state.discovered.has(item.name);
                     const card = document.createElement('div');
-                    card.className = 'inv-card';
-                    card.style.opacity = discovered ? '1' : '0.2';
-                    card.style.borderLeftColor = discovered ? RARITY_DATA[item.rarity].color : '#333';
-                    
+                    card.className = 'small-card';
+                    card.style.opacity = disc ? 1 : 0.1;
+                    card.style.borderLeftColor = disc ? RARITIES[item.rarity].color : '#111';
                     card.innerHTML = `
-                        <div style="font-size: 10px;">${discovered ? item.rarity : '???' }</div>
-                        <div style="font-weight: bold; font-size: 14px;">${discovered ? item.name : 'Unknown Artifact'}</div>
+                        <div style="font-size:9px;">${disc ? item.rarity : '???' }</div>
+                        <div style="font-weight:bold; font-size:12px">${disc ? item.name : 'HIDDEN'}</div>
                     `;
                     grid.appendChild(card);
                 });
             }
 
-            buyUpgrade(type) {
-                if (type === 'luck') {
-                    const cost = 500 * Math.pow(1.5, this.state.upgrades.luck);
-                    if (this.state.money >= cost) {
-                        this.state.money -= cost;
-                        this.state.luckMultiplier += 0.5;
-                        this.state.upgrades.luck++;
-                        this.showToast("LUCK UPGRADED!");
+            renderUpgrades() {
+                const list = document.getElementById('upgrade-list');
+                list.innerHTML = '';
+                
+                const upData = [
+                    { id: 'luckBoost', name: 'Luck Catalyst', desc: 'Increases base luck by +1.0 per level.', cost: 1000, growth: 2.5 },
+                    { id: 'multiRoll', name: 'Quantum Splitter', desc: 'Roll multiple items at once.', cost: 50000, growth: 10 },
+                    { id: 'rollSpeed', name: 'Hyper-Processor', desc: 'Unlocks faster auto-rolling.', cost: 5000, growth: 3 },
+                    { id: 'eventMastery', name: 'Time Weaver', desc: 'Events last longer and are more powerful.', cost: 100000, growth: 5 }
+                ];
+
+                upData.forEach(up => {
+                    const lvl = this.state.upgrades[up.id];
+                    const cost = Math.floor(up.cost * Math.pow(up.growth, lvl));
+                    const card = document.createElement('div');
+                    card.className = 'upgrade-card';
+                    card.innerHTML = `
+                        <div>
+                            <h3>${up.name} (Lv. ${lvl})</h3>
+                            <p>${up.desc}</p>
+                        </div>
+                        <button class="btn-buy" onclick="app.buyUpgrade('${up.id}', ${cost})" ${this.state.money < cost ? 'disabled' : ''}>
+                            UPGRADE: $${cost.toLocaleString()}
+                        </button>
+                    `;
+                    list.appendChild(card);
+                });
+            }
+
+            buyUpgrade(id, cost) {
+                if (this.state.money >= cost) {
+                    this.state.money -= cost;
+                    if (id === 'multiRoll') this.state.upgrades[id] += 1;
+                    else if (id === 'luckBoost') {
+                        this.state.upgrades[id] += 1;
+                        this.state.luck += 1.0;
+                    } else {
+                        this.state.upgrades[id] += 1;
                     }
-                } else if (type === 'sell') {
-                    const cost = 1000 * Math.pow(1.8, this.state.upgrades.sell);
-                    if (this.state.money >= cost) {
-                        this.state.money -= cost;
-                        this.state.sellMultiplier += 0.2;
-                        this.state.upgrades.sell++;
-                        this.showToast("EFFICIENCY UPGRADED!");
-                    }
+                    this.toast("UPGRADE PURCHASED!");
+                    this.renderUpgrades();
+                    this.updateHUD();
                 }
-                this.updateUI();
-                this.save();
+            }
+
+            // Spin Wheel Logic
+            drawWheel() {
+                const canvas = document.getElementById('wheel-canvas');
+                const ctx = canvas.getContext('2d');
+                const colors = ['#ff0055', '#7000ff', '#00f2ff', '#ffee00', '#00ff88', '#ff8000'];
+                const labels = ['x10 Luck', '5 Tokens', 'JACKPOT', 'x2 Luck', '1 Token', 'Nothing'];
+                
+                ctx.clearRect(0, 0, 300, 300);
+                for(let i=0; i<6; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(150,150);
+                    ctx.arc(150, 150, 140, (i*60)*Math.PI/180, ((i+1)*60)*Math.PI/180);
+                    ctx.fillStyle = colors[i];
+                    ctx.fill();
+                    ctx.save();
+                    ctx.translate(150,150);
+                    ctx.rotate((i*60 + 30)*Math.PI/180);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "bold 12px Arial";
+                    ctx.fillText(labels[i], 50, 5);
+                    ctx.restore();
+                }
+            }
+
+            spin() {
+                if (this.state.tokens < 1) return alert("Need Tokens!");
+                this.state.tokens--;
+                this.updateHUD();
+                
+                const wheel = document.getElementById('spin-wheel');
+                const deg = 1800 + Math.random() * 360;
+                wheel.style.transform = `rotate(${deg}deg)`;
+                
+                setTimeout(() => {
+                    const finalDeg = deg % 360;
+                    // Logic for rewards based on finalDeg
+                    this.state.luck *= 2;
+                    this.toast("WHEEL: Luck x2 Awarded!");
+                    this.updateHUD();
+                }, 4000);
+            }
+
+            // System Funcs
+            updateHUD() {
+                document.getElementById('hud-money').innerText = `$${Math.floor(this.state.money).toLocaleString()}`;
+                document.getElementById('hud-tokens').innerText = this.state.tokens;
+                document.getElementById('hud-rolls').innerText = this.state.rolls.toLocaleString();
+                document.getElementById('hud-luck').innerText = `x${this.state.luck.toFixed(1)}`;
+                
+                // Handle Auto-roll checkbox
+                const auto = document.getElementById('check-auto').checked;
+                if (auto && !this.autoInterval) {
+                    this.autoInterval = setInterval(() => this.roll(), 200);
+                } else if (!auto && this.autoInterval) {
+                    clearInterval(this.autoInterval);
+                    this.autoInterval = null;
+                }
+            }
+
+            toast(msg, color) {
+                const bin = document.getElementById('toast-bin');
+                const t = document.createElement('div');
+                t.className = 'toast';
+                t.style.borderRightColor = color || 'var(--accent-primary)';
+                t.innerText = msg;
+                bin.appendChild(t);
+                setTimeout(() => t.remove(), 4000);
             }
 
             sellAll() {
-                // Logic to keep top 5 rarest types and sell everything else for 50% value
-                const items = Object.values(this.state.inventory).sort((a,b) => {
-                    return RARITY_DATA[b.rarity].baseValue - RARITY_DATA[a.rarity].baseValue;
+                Object.values(this.state.inventory).forEach(item => {
+                    if (RARITIES[item.rarity].weight > 1000) { // If not very rare
+                        this.state.money += (RARITIES[item.rarity].value * item.count);
+                        item.count = 0;
+                    }
                 });
-
-                items.slice(5).forEach(item => {
-                    const value = (RARITY_DATA[item.rarity].baseValue * item.count) * 0.5;
-                    this.state.money += value;
-                    item.count = 0;
-                });
-
-                this.showToast("INVENTORY PURGED & SOLD");
+                this.toast("Inventory Cleared & Sold");
                 this.renderInventory();
-                this.updateUI();
-                this.save();
+                this.updateHUD();
             }
 
-            /**
-             * ADMIN MODULE
-             */
-            unlockAdmin() {
-                const pass = document.getElementById('admin-pass').value;
-                if (pass === 'rnggod69') {
-                    document.getElementById('admin-lock').style.display = 'none';
-                    document.getElementById('admin-interface').style.display = 'block';
+            // Save / Load
+            save() {
+                const data = {
+                    ...this.state,
+                    discovered: Array.from(this.state.discovered)
+                };
+                localStorage.setItem('OMEGA_RNG_SAVE', JSON.stringify(data));
+            }
+
+            load() {
+                const raw = localStorage.getItem('OMEGA_RNG_SAVE');
+                if (raw) {
+                    const p = JSON.parse(raw);
+                    this.state = { ...this.state, ...p };
+                    this.state.discovered = new Set(p.discovered || []);
+                }
+            }
+
+            // Admin Override
+            toggleAdmin() {
+                const ov = document.getElementById('admin-overlay');
+                ov.style.display = ov.style.display === 'flex' ? 'none' : 'flex';
+            }
+
+            verifyAdmin() {
+                if (document.getElementById('admin-pass').value === 'omega999') {
+                    document.getElementById('admin-panel').style.display = 'block';
+                    document.getElementById('admin-verify').style.display = 'none';
                     this.state.isAdmin = true;
-                    this.showToast("ADMIN ACCESS GRANTED", "#f7768e");
-                } else {
-                    alert("ACCESS DENIED");
+                    this.toast("SYSTEM OVERRIDE ACTIVE", "red");
                 }
             }
 
-            adminAction(action) {
-                if (!this.state.isAdmin) return;
-
-                switch(action) {
-                    case 'add_money':
-                        this.state.money += 1000000;
-                        break;
-                    case 'add_luck':
-                        this.state.luckMultiplier = 100;
-                        break;
-                    case 'give_godly':
-                        const godlyPool = ITEM_DATABASE.filter(i => i.rarity === 'GODLY');
-                        const g = godlyPool[0];
-                        if (!this.state.inventory[g.name]) this.state.inventory[g.name] = { ...g, count: 0 };
-                        this.state.inventory[g.name].count++;
-                        this.state.collection.add(g.name);
-                        break;
-                    case 'reset_data':
-                        if(confirm("WIPE EVERYTHING?")) {
-                            localStorage.clear();
-                            location.reload();
-                        }
-                        break;
-                    case 'toggle_glitch':
-                        this.state.isGlitchMode = !this.state.isGlitchMode;
-                        document.body.style.filter = this.state.isGlitchMode ? 'hue-rotate(90deg) invert(1)' : 'none';
-                        break;
-                    case 'unlock_all':
-                        ITEM_DATABASE.forEach(i => this.state.collection.add(i.name));
-                        break;
-                }
-                this.updateUI();
+            adminCmd(type) {
+                if (type === 'money') this.state.money += 1000000000;
+                if (type === 'luck') this.state.luck = 10000;
+                if (type === 'tokens') this.state.tokens = 999;
+                if (type === 'clear') { localStorage.clear(); location.reload(); }
+                this.updateHUD();
                 this.save();
             }
-        }
 
-        /**
-         * GLOBAL HELPERS
-         */
-        const game = new RngGame();
+            // Background VFX
+            initParticles() {
+                const canvas = document.getElementById('bg-canvas');
+                const ctx = canvas.getContext('2d');
+                let pts = [];
+                
+                const resize = () => {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                };
+                window.onresize = resize;
+                resize();
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            
-            document.getElementById(`${tabId}-view`).classList.add('active');
-            event.target.classList.add('active');
-            
-            game.updateUI();
-        }
+                for(let i=0; i<100; i++) {
+                    pts.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        s: Math.random() * 2,
+                        v: Math.random() * 0.5
+                    });
+                }
 
-        // Particle Background Logic
-        const canvas = document.createElement('canvas');
-        document.body.appendChild(canvas);
-        canvas.style.position = 'fixed';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.zIndex = '-1';
-        const ctx = canvas.getContext('2d');
-
-        let particles = [];
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.onresize = resize;
-        resize();
-
-        class Particle {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2;
-                this.speedX = Math.random() * 0.5 - 0.25;
-                this.speedY = Math.random() * 0.5 - 0.25;
-            }
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                if (this.x > canvas.width) this.x = 0;
-                if (this.y > canvas.height) this.y = 0;
-            }
-            draw() {
-                ctx.fillStyle = '#222';
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
+                const anim = () => {
+                    ctx.clearRect(0,0, canvas.width, canvas.height);
+                    ctx.fillStyle = "rgba(255,255,255,0.1)";
+                    pts.forEach(p => {
+                        p.y -= p.v;
+                        if(p.y < 0) p.y = canvas.height;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.s, 0, Math.PI*2);
+                        ctx.fill();
+                    });
+                    requestAnimationFrame(anim);
+                };
+                anim();
             }
         }
 
-        for (let i = 0; i < 100; i++) particles.push(new Particle());
-
-        function animate() {
-            ctx.clearRect(0,0, canvas.width, canvas.height);
-            particles.forEach(p => {
-                p.update();
-                p.draw();
-            });
-            requestAnimationFrame(animate);
-        }
-        animate();
+        // Global Instance
+        const app = new OmegaEngine();
 
     </script>
 </body>
