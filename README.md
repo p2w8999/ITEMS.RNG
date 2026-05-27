@@ -1,1 +1,3 @@
 # ITEMS.RNG
+
+ADMIN PASS : rnggod69
